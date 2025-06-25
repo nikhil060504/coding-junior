@@ -6,10 +6,10 @@ yarn-error.log*
 pnpm-debug.log*
 
 # Build output
-dist/
-out/
-build/
-coverage/
+/dist/
+/out/
+/build/
+/coverage/
 *.tsbuildinfo
 
 # VS Code settings
@@ -33,3 +33,51 @@ Thumbs.db
 
 # Misc
 *.log
+
+# Editor folders
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# Mac system files
+.AppleDouble
+.LSOverride
+
+# Windows system files
+Desktop.ini
+$RECYCLE.BIN/
+
+# npm logs
+npm-debug.log*
+
+# Yarn logs
+yarn-debug.log*
+yarn-error.log*
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Optional stylelint cache
+.stylelintcache
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# VS Code extension test output
+*.vsixmanifest
+
+# JetBrains IDEs
+.idea/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/

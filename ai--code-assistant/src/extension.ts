@@ -225,5 +225,5 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 export function deactivate() {
-  // Clean up resources if needed
+  // Clean up resources if needed and remov
 }
