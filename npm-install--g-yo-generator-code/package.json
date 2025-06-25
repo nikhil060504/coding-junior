@@ -1,0 +1,14 @@
+{
+  "name": "@npm-install--g-yo-generator-code/source",
+  "version": "0.0.0",
+  "license": "MIT",
+  "scripts": {},
+  "private": true,
+  "dependencies": {
+    "nx-vscode": "0.0.2"
+  },
+  "devDependencies": {
+    "@nx/workspace": "16.7.4",
+    "nx": "16.7.4"
+  }
+}
