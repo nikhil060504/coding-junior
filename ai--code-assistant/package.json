@@ -13,7 +13,9 @@
   "type": "git",
   "url": "https://github.com/your-username/your-repo-name.git"
 },
-  "activationEvents": [],
+  "activationEvents": [
+    "onCommand:ai-code-assistant.start"
+  ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
