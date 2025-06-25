@@ -200,7 +200,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ onSendMessage, vsc
             className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-[70%] rounded-lg p-3 ${message.role === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 dark:text-white'}`}
+              className={`max-w-[70%] rounded-lg p-3 shadow-sm border ${message.role === 'user' ? 'ai-chat-bubble-user' : 'ai-chat-bubble-assistant'}`}
             >
               {renderMessage(message)}
               {message.attachments?.map((attachment, i) => (
@@ -249,13 +249,13 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ onSendMessage, vsc
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              className="flex-1 px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              className="flex-1 ai-chat-input"
               placeholder={isLoading ? 'Processing...' : 'Type a message...'}
               disabled={isLoading}
             />
             <button
               type="submit"
-              className={`px-4 py-2 bg-blue-500 text-white rounded-lg transition-all duration-200 ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-600'}`}
+              className={`ai-chat-send-btn ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
               disabled={isLoading || (!input.trim() && attachments.length === 0)}
             >
               {isLoading ? 'Processing...' : 'Send'}

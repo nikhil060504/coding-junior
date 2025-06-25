@@ -10,9 +10,9 @@
     "Other"
   ],
   "repository": {
-  "type": "git",
-  "url": "https://github.com/your-username/your-repo-name.git"
-},
+    "type": "git",
+    "url": "https://github.com/your-username/your-repo-name.git"
+  },
   "activationEvents": [
     "onCommand:ai-code-assistant.start"
   ],
@@ -27,25 +27,26 @@
     "configuration": {
       "title": "AI Code Assistant",
       "properties": {
-        "aiCodeAssistant.openaiApiKey": {
+        "aiCodeAssistant.cohereApiKey": {
           "type": "string",
           "default": "",
-          "description": "OpenAI API Key for the AI Code Assistant"
+          "description": "Cohere API Key for the AI Code Assistant"
         }
       }
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run package",
-    "compile": "webpack",
-    "watch": "webpack --watch",
-    "package": "webpack --mode production --devtool hidden-source-map",
+    "compile:ext": "webpack",
+    "watch:ext": "webpack --watch",
+    "compile:web": "webpack --config webpack.webview.config.js",
+    "watch:web": "webpack --config webpack.webview.config.js --watch",
+    "build": "npm run compile:ext && npm run compile:web",
+    "package": "npm run build && vsce package",
     "compile-tests": "tsc -p . --outDir out",
     "watch-tests": "tsc -p . -w --outDir out",
-    "pretest": "npm run compile-tests && npm run compile && npm run lint",
+    "pretest": "npm run compile-tests && npm run build && npm run lint",
     "lint": "eslint src --ext ts",
-    "test": "vscode-test",
-    "build:webview": "cd src/webview && npm run build"
+    "test": "vscode-test"
   },
   "devDependencies": {
     "@types/dompurify": "^3.0.5",
@@ -58,18 +59,21 @@
     "@vscode/test-electron": "^2.3.8",
     "css-loader": "^7.1.2",
     "eslint": "^8.56.0",
+    "mini-css-extract-plugin": "^2.9.2",
     "postcss-loader": "^8.1.1",
     "style-loader": "^4.0.0",
-    "ts-loader": "^9.5.1",
+    "ts-loader": "^9.5.2",
     "typescript": "^5.3.3",
     "webpack": "^5.89.0",
     "webpack-cli": "^5.1.4"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "@vscode/webview-ui-toolkit": "^1.4.0",
     "autoprefixer": "^10.4.0",
+    "cohere-ai": "^7.17.1",
     "dompurify": "^3.0.6",
     "highlight.js": "^11.9.0",
     "marked": "^11.1.0",
@@ -78,5 +82,15 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "tailwindcss": "^3.4.0"
-  }
+  },
+  "files": [
+    "dist",
+    "build",
+    "build/static",
+    "build/static/js",
+    "build/static/css",
+    "src",
+    "README.md",
+    "CHANGELOG.md"
+  ]
 }

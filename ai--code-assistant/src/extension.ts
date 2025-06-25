@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { OpenAI } from 'openai';
+import fetch from 'node-fetch';
 
 interface WebviewMessage {
   type: string;
@@ -15,20 +15,23 @@ interface WebviewMessage {
 
 export function activate(context: vscode.ExtensionContext) {
   let currentPanel: vscode.WebviewPanel | undefined = undefined;
-  let openai: OpenAI | undefined = undefined;
+  let cohereApiKey: string | undefined = undefined;
 
-  const initializeOpenAI = (): void => {
+  const initializeCohere = (): void => {
     try {
-      const apiKey = vscode.workspace.getConfiguration('aiCodeAssistant').get<string>('openaiApiKey');
-      if (!apiKey) {
-        throw new Error('OpenAI API key not configured');
+      cohereApiKey = vscode.workspace.getConfiguration('aiCodeAssistant').get<string>('cohereApiKey');
+      console.log('Cohere API key loaded:', cohereApiKey); // Debug log
+      if (!cohereApiKey) {
+        throw new Error('Cohere API key not configured');
       }
-      openai = new OpenAI({ apiKey });
     } catch (error) {
-      vscode.window.showErrorMessage('Failed to initialize OpenAI client. Please check your API key.');
-      console.error('OpenAI initialization error:', error);
+      vscode.window.showErrorMessage('Failed to initialize Cohere client. Please check your API key.');
+      console.error('Cohere initialization error:', error);
     }
   };
+
+  // Always initialize Cohere API key at activation
+  initializeCohere();
 
   const createWebviewPanel = (): void => {
     try {
@@ -38,7 +41,7 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.ViewColumn.Two,
         {
           enableScripts: true,
-          localResourceRoots: [vscode.Uri.file(path.join(context.extensionPath, 'build'))],
+          localResourceRoots: [vscode.Uri.file(path.join(context.extensionPath, 'dist'))],
           retainContextWhenHidden: true,
         }
       );
@@ -90,61 +93,50 @@ export function activate(context: vscode.ExtensionContext) {
   };
 
   const handleChatMessage = async (message: WebviewMessage): Promise<void> => {
-    if (!openai || !currentPanel) {
-      const error = 'OpenAI client or webview panel not initialized';
-      console.error(error);
-      currentPanel?.webview.postMessage({
-        type: 'error',
-        error,
-      });
+    if (!cohereApiKey || !currentPanel) {
+      currentPanel?.webview.postMessage({ type: 'error', error: 'Cohere API key or webview panel not initialized' });
       return;
     }
 
     if (!message.message?.trim()) {
-      const error = 'Empty message received';
-      console.error(error);
-      currentPanel.webview.postMessage({
-        type: 'error',
-        error,
-      });
+      currentPanel.webview.postMessage({ type: 'error', error: 'Empty message' });
       return;
     }
 
     try {
-      let context = message.message;
-      
-      // Add file context if attachments are present
+      let prompt = message.message.trim();
       if (message.attachments?.length) {
-        const fileContexts = message.attachments
-          .map(attachment => `File ${attachment.path}:\n${attachment.content || ''}`)
+        const files = message.attachments
+          .map(a => `File ${a.path}:\n${a.content ?? ''}`)
           .join('\n\n');
-        context = `${context}\n\nContext from attached files:\n${fileContexts}`;
+        prompt += `\n\nContext from attached files:\n${files}`;
       }
 
-      const response = await openai.chat.completions.create({
-        model: 'gpt-3.5-turbo',
-        messages: [
-          { role: 'system', content: 'You are a helpful AI code assistant.' },
-          { role: 'user', content: context },
-        ],
-        temperature: 0.7,
-        max_tokens: 2000,
+      // Call Cohere Generate endpoint
+      const response = await fetch('https://api.cohere.ai/v1/chat', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${cohereApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'command-r-plus',
+          message: prompt,
+        }),
       });
-
-      if (!response.choices[0]?.message?.content) {
-        throw new Error('Empty response from OpenAI');
+      const data = await response.json();
+      if (data.message) {
+        currentPanel.webview.postMessage({ type: 'response', content: data.message });
+      } else if (data.text) {
+        currentPanel.webview.postMessage({ type: 'response', content: data.text });
+      } else {
+        throw new Error(data.message || 'Cohere returned an empty response');
       }
-
-      currentPanel.webview.postMessage({
-        type: 'response',
-        content: response.choices[0].message.content,
-      });
-    } catch (error) {
-      console.error('OpenAI API error:', error);
-      currentPanel.webview.postMessage({
-        type: 'error',
-        error: error instanceof Error ? error.message : 'Failed to get response from OpenAI',
-      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error('Cohere API error:', msg);
+      vscode.window.showErrorMessage(`AI Code Assistant: ${msg}`);
+      currentPanel.webview.postMessage({ type: 'error', error: msg });
     }
   };
 
@@ -190,12 +182,8 @@ export function activate(context: vscode.ExtensionContext) {
   const getWebviewContent = (context: vscode.ExtensionContext, webview: vscode.Webview): string => {
     try {
       const scriptUri = webview.asWebviewUri(
-        vscode.Uri.file(path.join(context.extensionPath, 'build', 'static', 'js', 'main.js'))
+        vscode.Uri.file(path.join(context.extensionPath, 'dist', 'webview.js'))
       );
-      const styleUri = webview.asWebviewUri(
-        vscode.Uri.file(path.join(context.extensionPath, 'build', 'static', 'css', 'main.css'))
-      );
-
       return `
         <!DOCTYPE html>
         <html lang="en">
@@ -203,7 +191,6 @@ export function activate(context: vscode.ExtensionContext) {
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>AI Code Assistant</title>
-          <link href="${styleUri}" rel="stylesheet">
         </head>
         <body>
           <div id="root"></div>
@@ -227,14 +214,11 @@ export function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(disposable);
 
-  // Initialize OpenAI client
-  initializeOpenAI();
-
   // Watch for configuration changes
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration(e => {
-      if (e.affectsConfiguration('aiCodeAssistant.openaiApiKey')) {
-        initializeOpenAI();
+      if (e.affectsConfiguration('aiCodeAssistant.cohereApiKey')) {
+        initializeCohere();
       }
     })
   );
